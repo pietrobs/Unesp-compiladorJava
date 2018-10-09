@@ -47,38 +47,15 @@ public class SintacticAnalyzer {
 
     public boolean zzBegin() throws IOException {
         Token t = null;
-        //Regra inicial -> Program
-        // bloco de declaração de variaveis
-        if (this.programRule()) {
 
-            blocoRule(t);
-        }
+        // bloco de declaração de variaveis
+        t = programRule();
+        blocoRule(t);
 
         return true;
     }
 
-    public void blocoRule(Token t) throws IOException {
-        t = declaracaoDeVariaveisRule();
-
-        t = procedureRule(t);
-
-//        t = comandoRule(t);
-    }
-
-    public String getErrors() {
-        String r = "";
-        for (int i = 0; i < this.errors.size(); i++) {
-            r += errors.get(i) + "\n";
-        }
-        return r;
-    }
-
-    public void discardWhile(ArrayList<String> seguintes, ArrayList<String> esperado) {
-
-    }
-
-//    ******************************************** VERIFICAÇÕES
-    private boolean programRule() throws IOException {
+    private Token programRule() throws IOException {
         Token t = lexical.next();
 
         if (!t.is("program")) {
@@ -107,7 +84,7 @@ public class SintacticAnalyzer {
                 if (isTipo(t)) {
                     errors.add("Casou tipo!");
                     continuar = false;
-                    declaracaoDeVariaveisRule();
+                    declaracaoDeVariaveisRule(t);
                 } else if (t.is("procedure")) {
                     continuar = false;
                     //declaracaoDeSubRotinas();
@@ -119,22 +96,25 @@ public class SintacticAnalyzer {
                 }
                 t = lexical.next();
             } while (!t.is(";") && continuar);
-            return false;
+
+        } else {
+            errors.add("Casou ponto-e-virgula!");
         }
-        errors.add("Casou ponto-e-virgula!");
-        return true;
+        return t;
     }
 
-    private boolean isTipo(Token t) {
-        if (t.is("boolean") || t.is("int")) {
-            return true;
-        }
-        return false;
+    public void blocoRule(Token t) throws IOException {
+        t = lexical.next();
+
+        t = declaracaoDeVariaveisRule(t);
+
+        t = procedureRule(t);
+
+        t = comandoRule(t);
     }
 
     //<declaracaoDeVariaveis> ::= <tipo><lista de identificadores>
-    private Token declaracaoDeVariaveisRule() throws IOException {
-        Token t = lexical.next();
+    private Token declaracaoDeVariaveisRule(Token t) throws IOException {
 
         boolean continuar;
         while (isTipo(t)) {
@@ -175,11 +155,8 @@ public class SintacticAnalyzer {
         }
     }
 
-    private void doNothing() {
-
-    }
-
     private Token procedureRule(Token t) throws IOException {
+
         if (!t.is("procedure")) {
             return t;
         } else {
@@ -265,9 +242,98 @@ public class SintacticAnalyzer {
         }
 
         this.blocoRule(t);
+
         return t;
     }
 
+    private Token comandoRule(Token t) throws IOException {
+        if (t.is("begin")) {
 
+            while (true) {
+
+                t = lexical.next();
+
+                if (t.is("end")) {
+                    break;
+                }
+
+                if (t.is("IDENTIFICADOR")) {
+                    t = lexical.next();
+
+                    if (t.is(":=")) {
+                        atribuicao(t);
+                    } else if (t.is("(")) {
+//                      chamada de procedimento
+                    }
+//                    
+                } else if (t.is("begin")) {
+                    comandoRule(t);
+                } else if (t.is("if")) {
+//                    comando condicional
+                } else if (t.is("while")) {
+//                    comando repetitivo
+                } else {
+                    errors.add("Token inesperado");
+                }
+            }
+
+        } else {
+            errors.add("BEGIN não encontrado");
+        }
+        return t;
+    }
+
+    private void atribuicao(Token t) throws IOException {
+        t = lexical.next();
+
+//        expressaoSimples(t);
+        if (isRelacao(t)) {
+
+//            expressaoSimples(t);
+        }
+
+    }
+
+    private void expressaoSimples(Token t) {
+        
+    }
+
+//    FUNÇÕES AUXILIARES
+    private boolean isTipo(Token t) {
+        if (t.is("boolean") || t.is("int")) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isTermo(Token t) {
+        if (t.is("IDENTIFICADOR") || t.is("REAL") || t.is("INTEIRO")) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isRelacao(Token t) {
+        if (t.is("=") || t.is("<>") || t.is("<=") || t.is(">=") || t.is(">")) {
+            return true;
+        }
+        return false;
+    }
+
+    private void doNothing() {
+
+    }
+
+    public String getErrors() {
+        String r = "";
+        for (int i = 0; i < this.errors.size(); i++) {
+            r += errors.get(i) + "\n";
+        }
+        return r;
+    }
+
+    public void discardWhile(ArrayList<String> seguintes, ArrayList<String> esperado) {
+
+    }
 
 }
