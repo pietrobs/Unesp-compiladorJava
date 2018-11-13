@@ -17,7 +17,9 @@ public class Token {
     private int columnInit;
     private int columnEnd;
     private int valor;
-
+    private String tipo;
+    private boolean foiUtilizado;
+    
     public Token(String lexema, String descricao, boolean isTerminal, int line, int columnInit, int columnEnd, int valor) {
         this.lexema = lexema;
         this.descricao = descricao;
@@ -26,6 +28,8 @@ public class Token {
         this.columnInit = columnInit;
         this.columnEnd = columnEnd;
         this.valor = valor;
+        this.tipo = null;
+        this.foiUtilizado = false;
     }
     
     public Object row(){
@@ -101,6 +105,16 @@ public class Token {
         if(this.descricao.equals(s) || this.lexema.equals(s)) return true;
         return false;
     }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+    
+    
     
     
     

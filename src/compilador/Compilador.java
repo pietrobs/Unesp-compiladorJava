@@ -67,43 +67,42 @@ public class Compilador extends javax.swing.JFrame {
 
             @Override
             public void keyReleased(KeyEvent e) {
-//                if (txtNew.getText().contains("var ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("var ", "<span color='#0000ff'>var</span> "));
-//                }
-//
-//                if (txtNew.getText().contains("int ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("int ", "<span color='#0000ff'>int</span> "));
-//                }
-//
-//                if (txtNew.getText().contains("boolean ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("boolean ", "<span color='#0000ff'>boolean</span> "));
-//                }
-//
-//                if (txtNew.getText().contains("begin ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("begin ", "<b>begin</b> "));
-//                }
-//
-//                if (txtNew.getText().contains("if ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("if ", "<b>if</b> "));
-//                }
-//
-//                if (txtNew.getText().contains("else ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("else ", "<b>if</b> "));
-//                }
-//
-//                if (txtNew.getText().contains("while ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("while ", "<b>if</b> "));
-//                }
-//
-//                if (txtNew.getText().contains("program ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("program ", "<b>program</b> "));
-//                }
-//
-//                if (txtNew.getText().contains("program ")) {
-//                    txtNew.setText(txtNew.getText().replaceAll("procedure ", "<b>procedure</b> "));
-//                }
+                if (txtNew.getText().contains("var ")) {;
+                    txtNew.setText(txtNew.getText().replaceAll("var ", "<span color='#0000ff'>var</span> "));
+                }
 
-//                txtNew.getCaret().setDot(txtNew.getText().length());
+                if (txtNew.getText().contains("int ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("int ", "<span color='#0000ff'>int</span> "));
+                }
+
+                if (txtNew.getText().contains("boolean ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("boolean ", "<span color='#0000ff'>boolean</span> "));
+                }
+
+                if (txtNew.getText().contains("begin ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("begin ", "<b>begin</b> "));
+                }
+
+                if (txtNew.getText().contains("if ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("if ", "<b>if</b> "));
+                }
+
+                if (txtNew.getText().contains("else ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("else ", "<b>if</b> "));
+                }
+
+                if (txtNew.getText().contains("while ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("while ", "<b>if</b> "));
+                }
+
+                if (txtNew.getText().contains("program ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("program ", "<b>program</b> "));
+                }
+
+                if (txtNew.getText().contains("procedure ")) {
+                    txtNew.setText(txtNew.getText().replaceAll("procedure ", "<b>procedure</b> "));
+                }
+
             }
         });
 
@@ -129,20 +128,36 @@ public class Compilador extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel1 = new javax.swing.JPanel();
         jButton2 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
-        tabPanel = new javax.swing.JTabbedPane();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        tabPanel = new javax.swing.JTabbedPane();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jTextArea2 = new javax.swing.JTextArea();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenu2 = new javax.swing.JMenu();
         jMenu3 = new javax.swing.JMenu();
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 988, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 306, Short.MAX_VALUE)
+        );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -170,21 +185,6 @@ public class Compilador extends javax.swing.JFrame {
             }
         });
 
-        tabPanel.setMaximumSize(new java.awt.Dimension(2, 4));
-        tabPanel.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                tabPanelStateChanged(evt);
-            }
-        });
-        tabPanel.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                tabPanelKeyPressed(evt);
-            }
-            public void keyTyped(java.awt.event.KeyEvent evt) {
-                tabPanelKeyTyped(evt);
-            }
-        });
-
         jButton5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/assets/icons/close.png"))); // NOI18N
         jButton5.setBorder(null);
         jButton5.addActionListener(new java.awt.event.ActionListener() {
@@ -200,6 +200,23 @@ public class Compilador extends javax.swing.JFrame {
                 jButton6ActionPerformed(evt);
             }
         });
+
+        tabPanel.setAutoscrolls(true);
+        tabPanel.setMaximumSize(new java.awt.Dimension(2, 4));
+        tabPanel.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                tabPanelStateChanged(evt);
+            }
+        });
+        tabPanel.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                tabPanelKeyPressed(evt);
+            }
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                tabPanelKeyTyped(evt);
+            }
+        });
+        jScrollPane3.setViewportView(tabPanel);
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -219,9 +236,19 @@ public class Compilador extends javax.swing.JFrame {
         });
         jScrollPane2.setViewportView(jTable1);
 
+        jTabbedPane1.addTab("Saída do Léxico", jScrollPane2);
+
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
         jScrollPane1.setViewportView(jTextArea1);
+
+        jTabbedPane1.addTab("Saída do Sintático", jScrollPane1);
+
+        jTextArea2.setColumns(20);
+        jTextArea2.setRows(5);
+        jScrollPane4.setViewportView(jTextArea2);
+
+        jTabbedPane1.addTab("Saída do Semântico", jScrollPane4);
 
         jMenu1.setText("Arquivo");
         jMenuBar1.add(jMenu1);
@@ -241,6 +268,7 @@ public class Compilador extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jTabbedPane1)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -252,12 +280,8 @@ public class Compilador extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(tabPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 538, Short.MAX_VALUE))
-                        .addContainerGap())))
+                    .addComponent(jScrollPane3))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -269,11 +293,9 @@ public class Compilador extends javax.swing.JFrame {
                     .addComponent(jButton5, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(tabPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 307, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 48, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 345, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -308,10 +330,12 @@ public class Compilador extends javax.swing.JFrame {
                 model.addRow((Object[]) t.row());
             }
 
-            SintacticAnalyzer sintactic = new SintacticAnalyzer(lexicalForSintactic);
+            SemanticAnalyzer semantic = new SemanticAnalyzer();
+            SintacticAnalyzer sintactic = new SintacticAnalyzer(lexicalForSintactic, semantic);
 
             if (sintactic.zzBegin()) {
                 jTextArea1.setText(sintactic.getErrors());
+                jTextArea2.setText(semantic.getErrors());
             }
 
         } catch (BadLocationException ex) {
@@ -430,10 +454,15 @@ public class Compilador extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTable jTable1;
     private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JTextArea jTextArea2;
     private javax.swing.JTabbedPane tabPanel;
     // End of variables declaration//GEN-END:variables
 }

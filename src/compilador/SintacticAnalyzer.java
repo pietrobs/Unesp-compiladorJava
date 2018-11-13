@@ -8,6 +8,7 @@ package compilador;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import javax.swing.JOptionPane;
 
 /**
@@ -17,142 +18,175 @@ import javax.swing.JOptionPane;
 public class SintacticAnalyzer {
 
     private LexicalAnalyzer lexical;
+    private SemanticAnalyzer semantic;
     private ArrayList<String> errors = new ArrayList();
+    private ArrayList<Token> tokens = new ArrayList();
+    private ArrayList<String> sync = new ArrayList();
+    private int current;
+    private String escopoAtual = "global";
 
-    public SintacticAnalyzer(LexicalAnalyzer lexical) {
+    public SintacticAnalyzer(LexicalAnalyzer lexical, SemanticAnalyzer semantic) {
+        this.semantic = semantic;
         this.lexical = lexical;
+        this.current = 0;
         errors.clear();
     }
 
-    public void zzDiscardBlock(String token) throws IOException {
-        while (true) {
-            if (lexical.next().is(token)) {
-                return;
-            }
+    public void zzDiscardWhile(String... tokens) throws IOException {
+        System.out.println("DESCARTANDO");
+
+        for (String token : tokens) {
+            System.out.println(token);
         }
+        System.out.println("#@#@#@#@");
+
+        Token t = this.getPreviousToken();
+        System.out.println(t.getLexema());
+
+        while (!Arrays.asList(tokens).contains(t.getLexema())
+                && !Arrays.asList(tokens).contains(t.getDescricao())
+                && this.hasNextToken()) {
+            System.out.println(!Arrays.asList(tokens).contains(t.getLexema()));
+            System.out.println(!Arrays.asList(tokens).contains(t.getDescricao()));
+            t = this.getNextToken();
+            System.out.println(t.getLexema());
+        }
+        System.out.println("######################");
+        return;
     }
 
-    public void zzDiscardRow(int current_line) throws IOException {
-        Token t;
-        while (true) {
+    public Token getPreviousToken() {
+        return tokens.get(this.current - 1);
+    }
 
-            t = lexical.next();
-            if (current_line == t.getLine()) {
-//                JOptionPane.showMessageDialog(null, "Current line: " + current_line + "|" + "Line:" + t.getLine() + " | " + t.getLexema());
-            } else {
-                return;
-            }
-        }
+    public Token getNextToken() {
+        return tokens.get(this.current++);
+    }
+
+    public Token seeNextToken() {
+        return tokens.get(this.current + 1);
+    }
+
+    public boolean hasNextToken() {
+        return (this.current < this.tokens.size());
     }
 
     public boolean zzBegin() throws IOException {
-        Token t = null;
+        Token t = lexical.next();
+
+        while (t != null) {
+            tokens.add(t);
+            t = lexical.next();
+        }
 
         // bloco de declaração de variaveis
         t = programRule();
+
         blocoRule(t);
 
         return true;
     }
 
     private Token programRule() throws IOException {
-        Token t = lexical.next();
+        Token t = this.getNextToken();
+        System.out.println("EXECUTANDO: REGRA DO PROGRAM com o token: " + t.getLexema());
 
         if (!t.is("program")) {
-            errors.add("Não foi possível encontrar a palavra 'program', na linha " + t.getLine() + ".");
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar a palavra 'program', na linha " + t.getLine() + ".");
+            zzDiscardWhile("IDENTIFICADOR");
         } else {
-            t = lexical.next();
-            errors.add("Casou program!");
+            t = this.getNextToken();
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou program!");
         }
 
         if (!t.is("IDENTIFICADOR")) {
+
             if (t.is("PALAVRA_RESERVADA")) {
-                errors.add("Palavra reservada " + t.getLexema() + " não pode ser utilizada como identificador, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t.getLexema() + " não pode ser utilizada como identificador, na linha " + t.getLine() + ".");
             } else {
-                errors.add("Não foi possível encontrar o IDENTIFICADOR do programa, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar o IDENTIFICADOR do programa, na linha " + t.getLine() + ".");
             }
+            zzDiscardWhile(";", ",");
+
         } else {
-            t = lexical.next();
-            errors.add("Casou identificador!");
+            t = this.getNextToken();
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou identificador!");
         }
 
         if (!t.is(";")) {
-            errors.add("Ponto e virgula esperado, mas foi encontrado um " + t.getLexema() + ", na linha " + t.getLine() + ".");
-            boolean continuar = true;
-
-            do {
-                if (isTipo(t)) {
-                    errors.add("Casou tipo!");
-                    continuar = false;
-                    declaracaoDeVariaveisRule(t);
-                } else if (t.is("procedure")) {
-                    continuar = false;
-                    //declaracaoDeSubRotinas();
-                    errors.add("Bloco de subrotinas não implementado ainda, na linha " + t.getLine() + ".");
-                } else if (t.is("begin")) {
-                    continuar = false;
-                    //declaracaoDeProgramas();
-                    errors.add("Bloco do programa não implementado ainda, na linha " + t.getLine() + ".");
-                }
-                t = lexical.next();
-            } while (!t.is(";") && continuar);
-
+            errors.add("ESCOPO: " + this.escopoAtual + " - Ponto e virgula esperado, mas foi encontrado um " + t.getLexema() + ", na linha " + t.getLine() + ".");
+            zzDiscardWhile("int", "boolean");
         } else {
-            errors.add("Casou ponto-e-virgula!");
+            t = this.getNextToken();
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou ponto-e-virgula!");
         }
         return t;
     }
 
     public void blocoRule(Token t) throws IOException {
-        t = lexical.next();
 
+        System.out.println("Executando: REGRA DO BLOCO com o token: " + t.getLexema());
         t = declaracaoDeVariaveisRule(t);
 
         t = procedureRule(t);
 
         t = comandoRule(t);
+        return;
     }
 
     //<declaracaoDeVariaveis> ::= <tipo><lista de identificadores>
     private Token declaracaoDeVariaveisRule(Token t) throws IOException {
 
-        boolean continuar;
         while (isTipo(t)) {
-            errors.add("Casou tipo!");
-            listaDeIdentificadoresRule();
-            t = this.lexical.next();
+            System.out.println("Executando: BLOCO DE DECLARACAO DE VARIAVEIS com o token: " + t.getLexema());
+
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou tipo!");
+
+            listaDeIdentificadoresRule(t.getLexema());
+
+            t = getNextToken();
         }
 
         return t;
     }
 
-    private boolean listaDeIdentificadoresRule() throws IOException {
+    private boolean listaDeIdentificadoresRule(String tipo) throws IOException {
         while (true) {
-            Token t = this.lexical.next();
-            if (t.is("IDENTIFICADOR")) {
-                errors.add("Casou identificador!");
-                t = this.lexical.next();
+            Token t = getNextToken();
 
-                if (t.is(",")) {
-                    errors.add("Casou ,!");
-                    doNothing();
-                } else if (t.is(";")) {
-                    errors.add("Casou ;!");
-                    return true;
+            if (!t.is("IDENTIFICADOR")) {
+
+                if (t.is("PALAVRA_RESERVADA")) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t.getLexema() + " não pode ser um identificador, na linha " + t.getLine() + ".");
+                    this.zzDiscardWhile(";", ",");
                 } else {
-                    errors.add("Virgula ou ponto e virgula não encontrado, na linha " + t.getLine() + ".");
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Identificador não encontrado, na linha " + t.getLine() + ".");
+                    this.zzDiscardWhile(";", ",");
+                }
+            } else {
+
+                if (semantic.getEscopoWithName(this.escopoAtual).hasVarWithName(t.getLexema())) {
+                    semantic.addError("ESCOPO: " + this.escopoAtual + " - Identificador já declarado, na linha " + t.getLine() + ".");
+                } else {
+                    semantic.addVariavel(this.escopoAtual, t, tipo);
                 }
 
-            } else if (t.is("PALAVRA_RESERVADA")) {
-                errors.add("Palavra reservada " + t.getLexema() + " não pode ser um identificador, na linha " + t.getLine() + ".");
-                this.zzDiscardBlock(";");
-                return false;
-            } else {
-                errors.add("Identificador não encontrado, na linha " + t.getLine() + ".");
-                this.zzDiscardBlock(";");
-                return false;
+                errors.add("ESCOPO: " + this.escopoAtual + " - Casou IDENTIFICADOR:" + t.getLexema());
+                t = getNextToken();
             }
+
+            if (t.is(",")) {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Casou ,!");
+                doNothing();
+            } else if (t.is(";")) {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Casou ;!");
+                return true;
+            } else {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Virgula ou ponto e virgula não encontrado, na linha " + t.getLine() + ".");
+            }
+
         }
+
     }
 
     private Token procedureRule(Token t) throws IOException {
@@ -160,85 +194,104 @@ public class SintacticAnalyzer {
         if (!t.is("procedure")) {
             return t;
         } else {
-            errors.add("Casou procedure");
-            t = lexical.next();
+            System.out.println("Executando: REGRA DA PROCEDURE com o token: " + t.getLexema());
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou procedure");
+            t = getNextToken();
         }
 
         if (!t.is("IDENTIFICADOR")) {
             if (t.is("PALAVRA_RESERVADA")) {
-                errors.add("Palavra reservada " + t.getLexema() + " não pode ser utilizada como identificador, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t.getLexema() + " não pode ser utilizada como identificador, na linha " + t.getLine() + ".");
             } else {
-                errors.add("Não foi possível encontrar o IDENTIFICADOR do programa, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar o IDENTIFICADOR, na linha " + t.getLine() + ".");
             }
+            this.zzDiscardWhile("(");
         } else {
-            t = lexical.next();
-            errors.add("Casou identificador!");
+            this.escopoAtual = t.getLexema();
+            this.semantic.addEscopo(this.escopoAtual);
+
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou identificador!");
+            t = getNextToken();
         }
 
         if (!t.is("AP")) {
-
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ABRE PARENTESES, na linha " + t.getLine() + ".");
+            this.zzDiscardWhile("var", ")");
         } else {
             errors.add("Casou (!");
-            t = lexical.next();
+            t = getNextToken();
         }
 
-        boolean encontrouFP = false;
-
-        do {
-            if (!t.is("var")) {
-                break;
-            } else {
-                //Se Token for VAR, devemos ter um ou mais identificadores (<IDENTIFICADOR><virgula>)
-                errors.add("Casou palavra var!");
-                t = lexical.next();
-
-                do {
-                    if (t.is("IDENTIFICADOR")) {
-                        errors.add("Casou identificador!");
-                        t = lexical.next();
-
-                        if (t.is(",")) {
-                            errors.add("Casou virgula!");
-                            t = lexical.next();
-                        } else if (t.is(":")) {
-                            t = lexical.next();
-                            errors.add("Casou :!");
-
-                            if (isTipo(t)) {
-                                t = lexical.next();
-                                errors.add("Casou tipo!");
-                            }
-                        } else {
-//                            errors.add("");
-                        }
-
-                    }
-
-                    if (t.is(";")) {
-                        errors.add("Casou ;!");
-                        t = lexical.next();
-                        break;
-                    } else if (t.is(")")) {
-                        encontrouFP = true;
-                        errors.add("Casou )!");
-                        t = lexical.next();
-                        break;
-                    }
-
-                } while (true);
+        if (!t.is("var")) {
+            if (!t.is(")")) {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o FECHA PARENTESES ou a PALAVRA RESERVADA var, na linha " + t.getLine() + ".");
+                this.zzDiscardWhile(";");
             }
-
-            if (encontrouFP) {
-                break;
-            }
-
-        } while (true);
-
-        if (t.is(";")) {
-            errors.add("Casou ;!");
-            t = lexical.next();
         } else {
-//                t = lexical.next();
+            //Se Token for VAR, devemos ter um ou mais identificadores (<IDENTIFICADOR><virgula>)
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou palavra var!");
+
+            t = getNextToken();
+
+            do {
+                if (!t.is("IDENTIFICADOR")) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o IDENTIFICADOR, na linha " + t.getLine() + ".");
+                    this.zzDiscardWhile(":", ";", ",");
+                } else {
+                    if (semantic.getEscopoWithName(this.escopoAtual).hasVarWithName(t.getLexema())) {
+                        semantic.addError("ESCOPO: " + this.escopoAtual + " - Identificador já declarado, na linha " + t.getLine() + ".");
+                    } else {
+                        semantic.addVariavel(this.escopoAtual, t, null);
+                    }
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou IDENTIFICADOR: " + t.getLexema());
+                    t = getNextToken();
+                }
+
+                if (!t.is(",")) {
+
+                    if (t.is(":")) {
+                        errors.add("ESCOPO: " + this.escopoAtual + " - Casou :");
+                        t = getNextToken();
+                    } else {
+                        errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ':' ou ','  na linha " + t.getLine() + ".");
+                        this.zzDiscardWhile(";");
+                    }
+
+                } else {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou ,");
+                    t = getNextToken();
+                }
+
+                if (!isTipo(t)) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o TIPO, na linha " + t.getLine() + ".");
+                    this.zzDiscardWhile(")");
+                } else {
+                    //ENCONTROU O TIPO, TEMOS QUE SETAR TODOS OS TIPOS NULOS PARA O TIPO ENCONTRADO
+
+                    semantic.getEscopoWithName(this.escopoAtual).changeTipoNullTo(t.getLexema());
+                    semantic.addError("ESCOPO: " + this.escopoAtual + " - Tipo encontrado, todos os tipos nulos foram refatorados para: " + t.getLexema());
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou tipo");
+                    t = getNextToken();
+                    break;
+                }
+
+            } while (true);
+        }
+
+        if (!t.is(")")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o FECHA PARENTESES, na linha " + t.getLine() + ".");
+            this.zzDiscardWhile(";");
+        } else {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou )");
+            t = getNextToken();
+        }
+
+        if (!t.is(";")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ';' , na linha " + t.getLine() + ".");
+            this.zzDiscardWhile("int", "boolean");
+        } else {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou ;");
+            t = getNextToken();
         }
 
         this.blocoRule(t);
@@ -247,20 +300,27 @@ public class SintacticAnalyzer {
     }
 
     private Token comandoRule(Token t) throws IOException {
+        System.out.println("Executando: REGRA DO COMANDO com o token: " + t.getLexema());
         if (t.is("begin")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Casou BEGIN");
 
             while (true) {
 
-                t = lexical.next();
+                t = getNextToken();
 
                 if (t.is("end")) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou END");
+                    this.escopoAtual = "global";
+                    semantic.addError("ESCOPO: " + escopoAtual + " - O escopo foi alterado.");
+                    t = getNextToken();
                     break;
                 }
 
                 if (t.is("IDENTIFICADOR")) {
-                    t = lexical.next();
+                    t = getNextToken();
 
                     if (t.is(":=")) {
+                        errors.add("ESCOPO: " + this.escopoAtual + " - É atribuição.");
                         atribuicao(t);
                     } else if (t.is("(")) {
 //                      chamada de procedimento
@@ -273,29 +333,37 @@ public class SintacticAnalyzer {
                 } else if (t.is("while")) {
 //                    comando repetitivo
                 } else {
-                    errors.add("Token inesperado");
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Token inesperado");
                 }
             }
 
         } else {
-            errors.add("BEGIN não encontrado");
+            errors.add("ESCOPO: " + this.escopoAtual + " - BEGIN não encontrado, foi encontrado: " + t.getLexema());
         }
+ 
         return t;
     }
 
     private void atribuicao(Token t) throws IOException {
+        Token aux = t;
+
         t = lexical.next();
 
-//        expressaoSimples(t);
-        if (isRelacao(t)) {
-
-//            expressaoSimples(t);
+        if (seeNextToken().is(";")) {
+//            É atribuição simples
+            if (t.is("INTEIRO")) {
+                if (aux.getTipo().equals("INTEIRO")) {
+                    semantic.addError("ESCOPO: " + this.escopoAtual + " - OK Tipo: INTEIRO esperado, encontrado: " + t.getLexema());
+                } else {
+                    semantic.addError("ESCOPO: " + this.escopoAtual + " - ERRO Tipo: INTEIRO esperado, encontrado: " + t.getLexema());
+                }
+            }
         }
 
     }
 
     private void expressaoSimples(Token t) {
-        
+
     }
 
 //    FUNÇÕES AUXILIARES
@@ -330,10 +398,6 @@ public class SintacticAnalyzer {
             r += errors.get(i) + "\n";
         }
         return r;
-    }
-
-    public void discardWhile(ArrayList<String> seguintes, ArrayList<String> esperado) {
-
     }
 
 }
