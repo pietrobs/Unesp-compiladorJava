@@ -35,23 +35,16 @@ public class SintacticAnalyzer {
     public void zzDiscardWhile(String... tokens) throws IOException {
         System.out.println("DESCARTANDO");
 
-        for (String token : tokens) {
-            System.out.println(token);
-        }
-        System.out.println("#@#@#@#@");
-
         Token t = this.getPreviousToken();
-        System.out.println(t.getLexema());
 
         while (!Arrays.asList(tokens).contains(t.getLexema())
                 && !Arrays.asList(tokens).contains(t.getDescricao())
                 && this.hasNextToken()) {
-            System.out.println(!Arrays.asList(tokens).contains(t.getLexema()));
-            System.out.println(!Arrays.asList(tokens).contains(t.getDescricao()));
             t = this.getNextToken();
-            System.out.println(t.getLexema());
+            if(this.current > this.tokens.size()){
+                break;
+            }
         }
-        System.out.println("######################");
         return;
     }
 
@@ -60,7 +53,12 @@ public class SintacticAnalyzer {
     }
 
     public Token getNextToken() {
-        return tokens.get(this.current++);
+        if (this.current < tokens.size()) {
+            return tokens.get(this.current++);
+        } else {
+            System.out.println("CAIU NA EXCEPTION!!!");
+            return tokens.get(0);
+        }
     }
 
     public Token seeNextToken() {
@@ -123,15 +121,16 @@ public class SintacticAnalyzer {
         return t;
     }
 
-    public void blocoRule(Token t) throws IOException {
+    public Token blocoRule(Token t) throws IOException {
 
-        System.out.println("Executando: REGRA DO BLOCO com o token: " + t.getLexema());
+        System.out.println("Executando: REGRA DO BLOCO com o token: " + t.getLexema() + " e: " + t.getDescricao());
         t = declaracaoDeVariaveisRule(t);
 
         t = procedureRule(t);
 
         t = comandoRule(t);
-        return;
+
+        return t;
     }
 
     //<declaracaoDeVariaveis> ::= <tipo><lista de identificadores>
@@ -294,7 +293,7 @@ public class SintacticAnalyzer {
             t = getNextToken();
         }
 
-        this.blocoRule(t);
+        t = this.blocoRule(t);
 
         return t;
     }
@@ -305,14 +304,25 @@ public class SintacticAnalyzer {
             errors.add("ESCOPO: " + this.escopoAtual + " - Casou BEGIN");
 
             while (true) {
-
+                if(this.current > this.tokens.size()){
+                    break;
+                }
+                
                 t = getNextToken();
+                
+                
 
                 if (t.is("end")) {
                     errors.add("ESCOPO: " + this.escopoAtual + " - Casou END");
                     this.escopoAtual = "global";
                     semantic.addError("ESCOPO: " + escopoAtual + " - O escopo foi alterado.");
                     t = getNextToken();
+
+                    if (!t.is(";")) {
+                        errors.add("ESCOPO: " + this.escopoAtual + " - PONTO E VIRGULA não encontrado");
+                    } else {
+                        t = getNextToken();
+                    }
                     break;
                 }
 
@@ -321,7 +331,7 @@ public class SintacticAnalyzer {
 
                     if (t.is(":=")) {
                         errors.add("ESCOPO: " + this.escopoAtual + " - É atribuição.");
-                        atribuicao(t);
+//                        atribuicao(t);
                     } else if (t.is("(")) {
 //                      chamada de procedimento
                     }
@@ -340,7 +350,7 @@ public class SintacticAnalyzer {
         } else {
             errors.add("ESCOPO: " + this.escopoAtual + " - BEGIN não encontrado, foi encontrado: " + t.getLexema());
         }
- 
+
         return t;
     }
 
