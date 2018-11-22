@@ -1,5 +1,5 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
+ * To change this license header, choose License Headers in Project_global Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
@@ -22,377 +22,415 @@ public class SintacticAnalyzer {
     private ArrayList<String> errors = new ArrayList();
     private ArrayList<Token> tokens = new ArrayList();
     private ArrayList<String> sync = new ArrayList();
-    private int current;
+    private int count_token;
+    private Token t_global = null;
     private String escopoAtual = "global";
 
     public SintacticAnalyzer(LexicalAnalyzer lexical, SemanticAnalyzer semantic) {
         this.semantic = semantic;
         this.lexical = lexical;
-        this.current = 0;
+        this.count_token = 0;
         errors.clear();
     }
 
     public void zzDiscardWhile(String... tokens) throws IOException {
-        System.out.println("DESCARTANDO");
+        t_global = this.getPreviousToken();
 
-        Token t = this.getPreviousToken();
-
-        while (!Arrays.asList(tokens).contains(t.getLexema())
-                && !Arrays.asList(tokens).contains(t.getDescricao())
+        while (!Arrays.asList(tokens).contains(t_global.getLexema())
+                && !Arrays.asList(tokens).contains(t_global.getDescricao())
                 && this.hasNextToken()) {
-            t = this.getNextToken();
-            if(this.current > this.tokens.size()){
+            t_global = this.getNextToken();
+            if (this.count_token > this.tokens.size()) {
                 break;
             }
         }
+        t_global = this.getPreviousToken();
         return;
     }
 
     public Token getPreviousToken() {
-        return tokens.get(this.current - 1);
+        return tokens.get(this.count_token - 1);
     }
 
     public Token getNextToken() {
-        if (this.current < tokens.size()) {
-            return tokens.get(this.current++);
+        if (this.count_token < tokens.size()) {
+            return tokens.get(this.count_token++);
         } else {
             System.out.println("CAIU NA EXCEPTION!!!");
-            return tokens.get(0);
+            return tokens.get(count_token - 1);
         }
     }
 
     public Token seeNextToken() {
-        return tokens.get(this.current + 1);
+        return tokens.get(this.count_token + 1);
     }
 
     public boolean hasNextToken() {
-        return (this.current < this.tokens.size());
+        return (this.count_token < this.tokens.size());
     }
 
     public boolean zzBegin() throws IOException {
+        this.count_token = 0;
         Token t = lexical.next();
-
         while (t != null) {
             tokens.add(t);
             t = lexical.next();
         }
 
         // bloco de declaração de variaveis
-        t = programRule();
+        programRule();
 
-        blocoRule(t);
+        blocoRule();
 
         return true;
     }
 
-    private Token programRule() throws IOException {
-        Token t = this.getNextToken();
-        System.out.println("EXECUTANDO: REGRA DO PROGRAM com o token: " + t.getLexema());
+    private void programRule() throws IOException {
+        t_global = this.getNextToken();
 
-        if (!t.is("program")) {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar a palavra 'program', na linha " + t.getLine() + ".");
+        System.out.println("EXECUTANDO: REGRA DO PROGRAM com o token: " + t_global.getLexema());
+
+        if (!t_global.is("program")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar a palavra 'program', na linha " + t_global.getLine() + ".");
+//            pintaLinha(t_global.getLine());
             zzDiscardWhile("IDENTIFICADOR");
         } else {
-            t = this.getNextToken();
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou program!");
+            t_global = this.getNextToken();
         }
 
-        if (!t.is("IDENTIFICADOR")) {
+        if (!t_global.is("IDENTIFICADOR")) {
 
-            if (t.is("PALAVRA_RESERVADA")) {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t.getLexema() + " não pode ser utilizada como identificador, na linha " + t.getLine() + ".");
+            if (t_global.is("PALAVRA_RESERVADA")) {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t_global.getLexema() + " não pode ser utilizada como identificador, na linha " + t_global.getLine() + ".");
             } else {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar o IDENTIFICADOR do programa, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar o IDENTIFICADOR do programa, na linha " + t_global.getLine() + ".");
             }
             zzDiscardWhile(";", ",");
 
         } else {
-            t = this.getNextToken();
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou identificador!");
+            t_global = this.getNextToken();
         }
 
-        if (!t.is(";")) {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Ponto e virgula esperado, mas foi encontrado um " + t.getLexema() + ", na linha " + t.getLine() + ".");
+        if (!t_global.is(";")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Ponto e virgula esperado, mas foi encontrado um " + t_global.getLexema() + ", na linha " + t_global.getLine() + ".");
             zzDiscardWhile("int", "boolean");
         } else {
-            t = this.getNextToken();
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou ponto-e-virgula!");
+            t_global = this.getNextToken();
         }
-        return t;
+
     }
 
-    public Token blocoRule(Token t) throws IOException {
+    public void blocoRule() throws IOException {
 
-        System.out.println("Executando: REGRA DO BLOCO com o token: " + t.getLexema() + " e: " + t.getDescricao());
-        t = declaracaoDeVariaveisRule(t);
+        declaracaoDeVariaveisRule();
 
-        t = procedureRule(t);
+        procedureRule();
 
-        t = comandoRule(t);
+        comandoRule();
 
-        return t;
     }
 
     //<declaracaoDeVariaveis> ::= <tipo><lista de identificadores>
-    private Token declaracaoDeVariaveisRule(Token t) throws IOException {
+    private void declaracaoDeVariaveisRule() throws IOException {
 
-        while (isTipo(t)) {
-            System.out.println("Executando: BLOCO DE DECLARACAO DE VARIAVEIS com o token: " + t.getLexema());
+        while (isTipo(t_global)) {
+            System.out.println("Executando: BLOCO DE DECLARACAO DE VARIAVEIS com o token: " + t_global.getLexema());
 
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou tipo!");
+            listaDeIdentificadoresRule(t_global.getLexema());
 
-            listaDeIdentificadoresRule(t.getLexema());
-
-            t = getNextToken();
+            t_global = getNextToken();
         }
 
-        return t;
     }
 
     private boolean listaDeIdentificadoresRule(String tipo) throws IOException {
         while (true) {
-            Token t = getNextToken();
+            Token t_global = getNextToken();
 
-            if (!t.is("IDENTIFICADOR")) {
+            if (!t_global.is("IDENTIFICADOR")) {
 
-                if (t.is("PALAVRA_RESERVADA")) {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t.getLexema() + " não pode ser um identificador, na linha " + t.getLine() + ".");
+                if (t_global.is("PALAVRA_RESERVADA")) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t_global.getLexema() + " não pode ser um identificador, na linha " + t_global.getLine() + ".");
                     this.zzDiscardWhile(";", ",");
                 } else {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Identificador não encontrado, na linha " + t.getLine() + ".");
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Identificador não encontrado, na linha " + t_global.getLine() + ".");
                     this.zzDiscardWhile(";", ",");
                 }
             } else {
 
-                if (semantic.getEscopoWithName(this.escopoAtual).hasVarWithName(t.getLexema())) {
-                    semantic.addError("ESCOPO: " + this.escopoAtual + " - Identificador já declarado, na linha " + t.getLine() + ".");
+                if (semantic.getEscopoWithName(this.escopoAtual).hasVarWithName(t_global.getLexema())) {
+                    semantic.addError("ESCOPO: " + this.escopoAtual + " - Identificador já declarado, na linha " + t_global.getLine() + ".");
                 } else {
-                    semantic.addVariavel(this.escopoAtual, t, tipo);
+                    semantic.addVariavel(this.escopoAtual, t_global, tipo);
                 }
-
-                errors.add("ESCOPO: " + this.escopoAtual + " - Casou IDENTIFICADOR:" + t.getLexema());
-                t = getNextToken();
+                t_global = getNextToken();
             }
 
-            if (t.is(",")) {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Casou ,!");
+            if (t_global.is(",")) {
                 doNothing();
-            } else if (t.is(";")) {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Casou ;!");
+            } else if (t_global.is(";")) {
                 return true;
             } else {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Virgula ou ponto e virgula não encontrado, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Virgula ou ponto e virgula não encontrado, na linha " + t_global.getLine() + ".");
             }
 
         }
 
     }
 
-    private Token procedureRule(Token t) throws IOException {
+    private void procedureRule() throws IOException {
 
-        if (!t.is("procedure")) {
-            return t;
+        if (!t_global.is("procedure")) {
+            return;
         } else {
-            System.out.println("Executando: REGRA DA PROCEDURE com o token: " + t.getLexema());
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou procedure");
-            t = getNextToken();
+            System.out.println("Executando: REGRA DA PROCEDURE com o token: " + t_global.getLexema());
+            t_global = getNextToken();
         }
 
-        if (!t.is("IDENTIFICADOR")) {
-            if (t.is("PALAVRA_RESERVADA")) {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t.getLexema() + " não pode ser utilizada como identificador, na linha " + t.getLine() + ".");
+        if (!t_global.is("IDENTIFICADOR")) {
+            if (t_global.is("PALAVRA_RESERVADA")) {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Palavra reservada " + t_global.getLexema() + " não pode ser utilizada como identificador, na linha " + t_global.getLine() + ".");
             } else {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar o IDENTIFICADOR, na linha " + t.getLine() + ".");
+                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possível encontrar o IDENTIFICADOR, na linha " + t_global.getLine() + ".");
             }
             this.zzDiscardWhile("(");
         } else {
-            this.escopoAtual = t.getLexema();
+            this.escopoAtual = t_global.getLexema();
             this.semantic.addEscopo(this.escopoAtual);
 
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou identificador!");
-            t = getNextToken();
+            t_global = getNextToken();
         }
 
-        if (!t.is("AP")) {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ABRE PARENTESES, na linha " + t.getLine() + ".");
+        if (!t_global.is("AP")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ABRE PARENTESES, na linha " + t_global.getLine() + ".");
             this.zzDiscardWhile("var", ")");
         } else {
-            errors.add("Casou (!");
-            t = getNextToken();
+            t_global = getNextToken();
         }
 
-        if (!t.is("var")) {
-            if (!t.is(")")) {
-                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o FECHA PARENTESES ou a PALAVRA RESERVADA var, na linha " + t.getLine() + ".");
-                this.zzDiscardWhile(";");
+        if (!t_global.is("var")) {
+            if (!t_global.is(")")) {
+                errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar a PALAVRA RESERVADA var, na linha " + t_global.getLine() + ".");
+                this.zzDiscardWhile("IDENTIFICADOR", ")");
             }
         } else {
             //Se Token for VAR, devemos ter um ou mais identificadores (<IDENTIFICADOR><virgula>)
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou palavra var!");
 
-            t = getNextToken();
+            t_global = getNextToken();
 
             do {
-                if (!t.is("IDENTIFICADOR")) {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o IDENTIFICADOR, na linha " + t.getLine() + ".");
+                if (!t_global.is("IDENTIFICADOR")) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o IDENTIFICADOR, na linha " + t_global.getLine() + ".");
                     this.zzDiscardWhile(":", ";", ",");
                 } else {
-                    if (semantic.getEscopoWithName(this.escopoAtual).hasVarWithName(t.getLexema())) {
-                        semantic.addError("ESCOPO: " + this.escopoAtual + " - Identificador já declarado, na linha " + t.getLine() + ".");
+                    if (semantic.getEscopoWithName(this.escopoAtual).hasVarWithName(t_global.getLexema())) {
+                        semantic.addError("ESCOPO: " + this.escopoAtual + " - Identificador já declarado, na linha " + t_global.getLine() + ".");
                     } else {
-                        semantic.addVariavel(this.escopoAtual, t, null);
+                        semantic.addVariavel(this.escopoAtual, t_global, null);
                     }
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou IDENTIFICADOR: " + t.getLexema());
-                    t = getNextToken();
+                    t_global = getNextToken();
                 }
 
-                if (!t.is(",")) {
+                if (!t_global.is(",")) {
 
-                    if (t.is(":")) {
-                        errors.add("ESCOPO: " + this.escopoAtual + " - Casou :");
-                        t = getNextToken();
+                    if (t_global.is(":")) {
+                        t_global = getNextToken();
                     } else {
-                        errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ':' ou ','  na linha " + t.getLine() + ".");
-                        this.zzDiscardWhile(";");
+                        errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ':' ou ','  na linha " + t_global.getLine() + ".");
+                        this.zzDiscardWhile(";", "int");
                     }
 
                 } else {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou ,");
-                    t = getNextToken();
+                    t_global = getNextToken();
                 }
 
-                if (!isTipo(t)) {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o TIPO, na linha " + t.getLine() + ".");
+                if (!isTipo(t_global)) {
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o TIPO, na linha " + t_global.getLine() + ".");
                     this.zzDiscardWhile(")");
                 } else {
                     //ENCONTROU O TIPO, TEMOS QUE SETAR TODOS OS TIPOS NULOS PARA O TIPO ENCONTRADO
 
-                    semantic.getEscopoWithName(this.escopoAtual).changeTipoNullTo(t.getLexema());
-                    semantic.addError("ESCOPO: " + this.escopoAtual + " - Tipo encontrado, todos os tipos nulos foram refatorados para: " + t.getLexema());
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou tipo");
-                    t = getNextToken();
+                    semantic.getEscopoWithName(this.escopoAtual).changeTipoNullTo(t_global.getLexema());
+                    semantic.addError("ESCOPO: " + this.escopoAtual + " - Tipo encontrado, todos os tipos nulos foram refatorados para: " + t_global.getLexema());
+                    t_global = getNextToken();
                     break;
                 }
 
             } while (true);
         }
 
-        if (!t.is(")")) {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o FECHA PARENTESES, na linha " + t.getLine() + ".");
+        if (!t_global.is(")")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o FECHA PARENTESES, na linha " + t_global.getLine() + ".");
             this.zzDiscardWhile(";");
         } else {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou )");
-            t = getNextToken();
+            t_global = getNextToken();
         }
 
-        if (!t.is(";")) {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ';' , na linha " + t.getLine() + ".");
+        if (!t_global.is(";")) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - Não foi possivel encontrar o ';' , na linha " + t_global.getLine() + ".");
             this.zzDiscardWhile("int", "boolean");
         } else {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou ;");
-            t = getNextToken();
+            t_global = getNextToken();
         }
 
-        t = this.blocoRule(t);
-
-        return t;
+        this.blocoRule();
     }
 
-    private Token comandoRule(Token t) throws IOException {
-        System.out.println("Executando: REGRA DO COMANDO com o token: " + t.getLexema());
-        if (t.is("begin")) {
-            errors.add("ESCOPO: " + this.escopoAtual + " - Casou BEGIN");
+    private void comandoRule() throws IOException {
+        System.out.println("Executando: REGRA DO COMANDO com o token: " + t_global.getLexema());
+
+        if (t_global.is("begin")) {
 
             while (true) {
-                if(this.current > this.tokens.size()){
+
+                if (this.count_token >= this.tokens.size()) {
                     break;
                 }
-                
-                t = getNextToken();
-                
-                
 
-                if (t.is("end")) {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Casou END");
+                t_global = getNextToken();
+
+                if (t_global.is("end")) {
                     this.escopoAtual = "global";
                     semantic.addError("ESCOPO: " + escopoAtual + " - O escopo foi alterado.");
-                    t = getNextToken();
+                    t_global = getNextToken();
 
-                    if (!t.is(";")) {
+                    if (!t_global.is(";")) {
                         errors.add("ESCOPO: " + this.escopoAtual + " - PONTO E VIRGULA não encontrado");
                     } else {
-                        t = getNextToken();
+                        t_global = getNextToken();
                     }
                     break;
                 }
 
-                if (t.is("IDENTIFICADOR")) {
-                    t = getNextToken();
+                if (t_global.is("IDENTIFICADOR")) {
+                    t_global = getNextToken();
 
-                    if (t.is(":=")) {
-                        errors.add("ESCOPO: " + this.escopoAtual + " - É atribuição.");
-//                        atribuicao(t);
-                    } else if (t.is("(")) {
+                    if (t_global.is(":=")) {
+                        System.out.println(t_global.getLexema());
+                        expressao();
+                    } else if (t_global.is("(")) {
 //                      chamada de procedimento
                     }
 //                    
-                } else if (t.is("begin")) {
-                    comandoRule(t);
-                } else if (t.is("if")) {
+                } else if (t_global.is("begin")) {
+                    comandoRule();
+                } else if (t_global.is("if")) {
 //                    comando condicional
-                } else if (t.is("while")) {
+                } else if (t_global.is("while")) {
 //                    comando repetitivo
                 } else {
-                    errors.add("ESCOPO: " + this.escopoAtual + " - Token inesperado");
+                    errors.add("ESCOPO: " + this.escopoAtual + " - Token inesperado : " + t_global.getLexema());
                 }
             }
 
         } else {
-            errors.add("ESCOPO: " + this.escopoAtual + " - BEGIN não encontrado, foi encontrado: " + t.getLexema());
+            errors.add("ESCOPO: " + this.escopoAtual + " - BEGIN não encontrado, foi encontrado: " + t_global.getLexema());
         }
 
-        return t;
     }
 
-    private void atribuicao(Token t) throws IOException {
-        Token aux = t;
+//    private void atribuicao(Token t) throws IOException {
+//        Token aux = t;
+//
+//        t_global = lexical.next();
+//
+//        if (seeNextToken().is(";")) {
+////            É atribuição simples
+//            if (t_global.is("INTEIRO")) {
+//                if (aux.getTipo().equals("INTEIRO")) {
+//                    semantic.addError("ESCOPO: " + this.escopoAtual + " - OK Tipo: INTEIRO esperado, encontrado: " + t_global.getLexema());
+//                } else {
+//                    semantic.addError("ESCOPO: " + this.escopoAtual + " - ERRO Tipo: INTEIRO esperado, encontrado: " + t_global.getLexema());
+//                }
+//            }
+//        }
+//
+//    }
+    private void isWhile(Token t) {
 
-        t = lexical.next();
+    }
 
-        if (seeNextToken().is(";")) {
-//            É atribuição simples
-            if (t.is("INTEIRO")) {
-                if (aux.getTipo().equals("INTEIRO")) {
-                    semantic.addError("ESCOPO: " + this.escopoAtual + " - OK Tipo: INTEIRO esperado, encontrado: " + t.getLexema());
+    private void expressao() throws IOException {
+        expressaoSimples();
+
+        if (isRelacao()) {
+            t_global = getNextToken();
+            expressaoSimples();
+        }
+    }
+
+    private void expressaoSimples() throws IOException {
+        t_global = getNextToken();
+
+
+        if (isSinal()) {
+            t_global = getNextToken();
+        }
+
+        if (!isTermo()) {
+            errors.add("ESCOPO: " + this.escopoAtual + " - ERRO Tipo: Atribuição inválida, TERMO esperado, encontrado:" + t_global.getLexema());
+        } else {
+            while (true) {
+                t_global = getNextToken();
+                if (t_global.is("+") || t_global.is("-") || t_global.is("or")) {
+                    t_global = getNextToken();
+                    if (!isTermo()) {
+                        errors.add("ESCOPO: " + this.escopoAtual + " - ERRO Tipo: Atribuição inválida, TERMO esperado, encontrado:" + t_global.getLexema());
+                    }
                 } else {
-                    semantic.addError("ESCOPO: " + this.escopoAtual + " - ERRO Tipo: INTEIRO esperado, encontrado: " + t.getLexema());
+                    break;
                 }
             }
         }
-
-    }
-
-    private void expressaoSimples(Token t) {
 
     }
 
 //    FUNÇÕES AUXILIARES
     private boolean isTipo(Token t) {
-        if (t.is("boolean") || t.is("int")) {
+        if (t_global.is("boolean") || t_global.is("int")) {
             return true;
         }
         return false;
     }
 
-    private boolean isTermo(Token t) {
-        if (t.is("IDENTIFICADOR") || t.is("REAL") || t.is("INTEIRO")) {
+    private boolean isTermo() {
+
+        if (isFator()) {
+
+            while (true) {
+                t_global = getNextToken();
+                if (t_global.is("*") || t_global.is("div") || t_global.is("and")) {
+                    t_global = getNextToken();
+                    if (!isFator()) {
+                        return false;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+        } else {
+            errors.add("ESCOPO: " + this.escopoAtual + " - ERRO Tipo: Atribuição inválida, FATOR esperado, encontrado:" + t_global.getLexema());
+        }
+        return true;
+    }
+
+    private boolean isRelacao() {
+        if (t_global.is("=") || t_global.is("<>") || t_global.is("<=") || t_global.is(">=") || t_global.is(">")) {
             return true;
         }
         return false;
     }
 
-    private boolean isRelacao(Token t) {
-        if (t.is("=") || t.is("<>") || t.is("<=") || t.is(">=") || t.is(">")) {
+    private boolean isSinal() {
+        if (t_global.is("+") || t_global.is("-")) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isFator() {
+        if (t_global.is("IDENTIFICADOR") || t_global.is("REAL") || t_global.is("INTEIRO") || t_global.is("true") || t_global.is("false")) {
             return true;
         }
         return false;

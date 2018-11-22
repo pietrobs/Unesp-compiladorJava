@@ -25,8 +25,10 @@ import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -42,8 +44,9 @@ import javax.swing.text.StyleContext;
  * @author pietr
  */
 public class Compilador extends javax.swing.JFrame {
-
-    ArrayList<PintadorDePalavras> tabs = new ArrayList();
+    
+    ArrayList<JTextPane> tabs = new ArrayList();
+    ArrayList<JScrollPane> scrollTabs = new ArrayList();
     DefaultTableModel model;
 
     /**
@@ -51,63 +54,18 @@ public class Compilador extends javax.swing.JFrame {
      */
     public Compilador() {
         initComponents();
-        PintadorDePalavras txtNew = new PintadorDePalavras();
-        txtNew.setBounds(0, 0, MAXIMIZED_BOTH, HEIGHT);
-        txtNew.setContentType("text/html");
-        txtNew.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (txtNew.getText().contains("var ")) {;
-                    txtNew.setText(txtNew.getText().replaceAll("var ", "<span color='#0000ff'>var</span> "));
-                }
-
-                if (txtNew.getText().contains("int ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("int ", "<span color='#0000ff'>int</span> "));
-                }
-
-                if (txtNew.getText().contains("boolean ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("boolean ", "<span color='#0000ff'>boolean</span> "));
-                }
-
-                if (txtNew.getText().contains("begin ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("begin ", "<b>begin</b> "));
-                }
-
-                if (txtNew.getText().contains("if ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("if ", "<b>if</b> "));
-                }
-
-                if (txtNew.getText().contains("else ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("else ", "<b>if</b> "));
-                }
-
-                if (txtNew.getText().contains("while ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("while ", "<b>if</b> "));
-                }
-
-                if (txtNew.getText().contains("program ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("program ", "<b>program</b> "));
-                }
-
-                if (txtNew.getText().contains("procedure ")) {
-                    txtNew.setText(txtNew.getText().replaceAll("procedure ", "<b>procedure</b> "));
-                }
-
-            }
-        });
-
+        
+        JTextPane txtNew = new JTextPane();
+        
+        JScrollPane scrollPane = new JScrollPane(txtNew);
+        TextLineNumber tln = new TextLineNumber(txtNew);
+        
+        scrollPane.setRowHeaderView(tln);
+        
         tabs.add(txtNew);
-        this.tabPanel.addTab("Inicial", tabs.get(tabs.size() - 1));
+        scrollTabs.add(scrollPane);
+        
+        this.tabPanel.addTab("Inicial", scrollTabs.get(0));
         this.setExtendedState(MAXIMIZED_BOTH);
         this.model = (DefaultTableModel) this.jTable1.getModel();
         jTable1.setVisible(true);
@@ -307,18 +265,20 @@ public class Compilador extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-           
+        
         while (jTable1.getRowCount() > 0) {
             model.removeRow(0);
         }
-        Document tab = tabs.get(tabPanel.getSelectedIndex()).getDocument();
+        JTextPane tab = tabs.get(tabPanel.getSelectedIndex());
         StringReader in, in2;
         try {
-            in = new StringReader(tab.getText(0, tab.getLength()));
-            in2 = new StringReader(tab.getText(0, tab.getLength()));
+            
+            in = new StringReader(tab.getText());
+            in2 = new StringReader(tab.getText());
+            
             LexicalAnalyzer lexicalForTable = new LexicalAnalyzer(in, model);
             LexicalAnalyzer lexicalForSintactic = new LexicalAnalyzer(in2, model);
-
+            
             Token t;
             int count = 0;
             while (true) {
@@ -326,40 +286,44 @@ public class Compilador extends javax.swing.JFrame {
                 if (t == null) {
                     break;
                 }
-
+                
                 model.addRow((Object[]) t.row());
             }
-
+            
             SemanticAnalyzer semantic = new SemanticAnalyzer();
             SintacticAnalyzer sintactic = new SintacticAnalyzer(lexicalForSintactic, semantic);
-
+            
             if (sintactic.zzBegin()) {
                 jTextArea1.setText(sintactic.getErrors());
                 jTextArea2.setText(semantic.getErrors());
             }
-
-        } catch (BadLocationException ex) {
-            Logger.getLogger(Compilador.class.getName()).log(Level.SEVERE, null, ex);
+            
         } catch (IOException ex) {
             Logger.getLogger(Compilador.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
 
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         String title = JOptionPane.showInputDialog("Nome da aba: ", null);
-        PintadorDePalavras txtNew = new PintadorDePalavras();
-        txtNew.setContentType("text/html");
-        txtNew.setBounds(0, 0, MAXIMIZED_BOTH, HEIGHT);
+        
+        JTextPane txtNew = new JTextPane();
+        
+        JScrollPane scrollPane = new JScrollPane(txtNew);
+        TextLineNumber tln = new TextLineNumber(txtNew);
+        
+        scrollPane.setRowHeaderView(tln);
         tabs.add(txtNew);
+        scrollTabs.add(scrollPane);
+        
         this.tabPanel.addTab(title, tabs.get(tabs.size() - 1));
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-
+        
         if (JOptionPane.showConfirmDialog(null, "Tem certeza que deseja excluir a aba atual?") == 0) {
-
+            
             int index = tabPanel.getSelectedIndex();
             tabs.remove(index);
             tabPanel.remove(index);
@@ -368,20 +332,20 @@ public class Compilador extends javax.swing.JFrame {
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         JFileChooser jfc = new JFileChooser();
-
+        
         int returnValue = jfc.showOpenDialog(null);
-
+        
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             String path = jfc.getSelectedFile().getAbsolutePath();
             FileReader arq;
             try {
                 arq = new FileReader(path);
                 BufferedReader lerArq = new BufferedReader(arq);
-
+                
                 String linha = lerArq.readLine();
-
+                
                 while (linha != null) {
-                    tabs.get(tabPanel.getSelectedIndex()).setText(tabs.get(tabPanel.getSelectedIndex()).getText() + "\n" + linha);
+//                    tabs.get(tabPanel.getSelectedIndex()).setText(tabs.get(tabPanel.getSelectedIndex()).getText() + "\n" + linha);
 
                     linha = lerArq.readLine(); // lê da segunda até a última linha
                 }

@@ -102,8 +102,7 @@ public class Token {
     }
     
     public boolean is(String s){
-        if(this.descricao.equals(s) || this.lexema.equals(s)) return true;
-        return false;
+        return(this.descricao.equals(s) || this.lexema.equals(s)); 
     }
 
     public String getTipo() {
